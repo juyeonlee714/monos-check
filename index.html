@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>수학학원 출석부</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', 'Segoe UI', sans-serif; background: #f0f4ff; color: #222; min-height: 100vh; }
+
+/* ── Header ── */
+header {
+  background: linear-gradient(135deg, #3b5bdb, #5c7cfa);
+  color: white; padding: 16px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 10px;
+  box-shadow: 0 2px 10px rgba(59,91,219,0.3);
+}
+header h1 { font-size: 1.2rem; font-weight: 700; }
+.header-right { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+select {
+  border: none; border-radius: 8px; padding: 6px 10px; font-size: 0.88rem;
+  background: rgba(255,255,255,0.2); color: white; outline: none; cursor: pointer;
+}
+select option { background: #3b5bdb; }
+
+.btn {
+  padding: 6px 13px; border-radius: 8px; border: none; cursor: pointer;
+  font-size: 0.82rem; font-weight: 600; transition: all 0.15s; white-space: nowrap;
+}
+.btn-white  { background: white; color: #3b5bdb; }
+.btn-white:hover { background: #e8edff; }
+.btn-outline { background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.35); }
+.btn-outline:hover { background: rgba(255,255,255,0.25); }
+.btn-green  { background: #51cf66; color: white; }
+.btn-green:hover { background: #40c057; }
+.btn-blue   { background: #339af0; color: white; }
+.btn-blue:hover  { background: #228be6; }
+.btn-sm { padding: 3px 9px; font-size: 0.76rem; }
+.btn-red { background: #ff6b6b; color: white; }
+.btn-red:hover { background: #fa5252; }
+
+.container { max-width: 1300px; margin: 0 auto; padding: 18px 14px; }
+
+/* ── Summary cards ── */
+.summary { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+.card {
+  background: white; border-radius: 12px; padding: 12px 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07); flex: 1; min-width: 110px;
+}
+.card .lbl { font-size: 0.7rem; color: #999; margin-bottom: 2px; }
+.card .val { font-size: 1.4rem; font-weight: 700; color: #3b5bdb; }
+
+/* ── Add bar ── */
+.add-bar {
+  background: white; border-radius: 12px; padding: 12px 14px;
+  display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07); align-items: center;
+}
+.add-bar input {
+  flex: 1; border: 1.5px solid #d0d8ff; border-radius: 8px;
+  padding: 7px 11px; font-size: 0.9rem; min-width: 120px; color: #222;
+}
+.add-bar input:focus { outline: none; border-color: #5c7cfa; }
+.day-picker { display: flex; gap: 4px; flex-wrap: wrap; }
+.dp-btn {
+  width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid #dee2e6;
+  background: white; cursor: pointer; font-size: 0.76rem; font-weight: 700;
+  color: #bbb; transition: all 0.12s; display: flex; align-items: center; justify-content: center;
+}
+.dp-btn:hover { border-color: #5c7cfa; color: #5c7cfa; }
+.dp-btn.on { background: #3b5bdb; border-color: #3b5bdb; color: white; }
+.dp-btn.sun.on { background: #fa5252; border-color: #fa5252; }
+.dp-btn.sat.on { background: #339af0; border-color: #339af0; }
+
+/* ── Layout: two columns ── */
+.main-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 14px;
+  align-items: start;
+}
+@media(max-width: 860px){ .main-layout { grid-template-columns: 1fr; } }
+
+/* ── Student list panel ── */
+.student-panel {
+  background: white; border-radius: 14px;
+  box-shadow: 0 1px 5px rgba(0,0,0,0.08);
+  overflow: hidden; position: sticky; top: 14px;
+}
+.panel-title {
+  background: #3b5bdb; color: white; padding: 10px 14px;
+  font-size: 0.85rem; font-weight: 700;
+}
+.student-list { max-height: 600px; overflow-y: auto; }
+.s-item {
+  display: flex; align-items: center; gap: 8px; padding: 9px 12px;
+  border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background 0.12s;
+  flex-wrap: wrap;
+}
+.s-item:hover { background: #f8f9ff; }
+.s-item.active { background: #eef1ff; }
+.s-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.s-name { font-size: 0.9rem; font-weight: 600; flex: 1; }
+.s-tags { display: flex; gap: 3px; flex-wrap: wrap; }
+.s-tag {
+  font-size: 0.65rem; font-weight: 700; padding: 1px 5px; border-radius: 10px;
+  background: #e8edff; color: #3b5bdb;
+}
+.s-tag.sun { background: #fff0f0; color: #fa5252; }
+.s-tag.sat { background: #e7f5ff; color: #228be6; }
+.s-actions { display: flex; gap: 4px; }
+.s-count { font-size: 0.75rem; color: #888; margin-left: auto; white-space: nowrap; }
+
+/* ── Calendar panel ── */
+.cal-panel {
+  background: white; border-radius: 14px;
+  box-shadow: 0 1px 5px rgba(0,0,0,0.08); overflow: hidden;
+}
+.cal-header {
+  padding: 12px 16px; background: #f8f9ff; border-bottom: 1px solid #eef0ff;
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+}
+.cal-title { font-size: 1rem; font-weight: 700; color: #3b5bdb; }
+.cal-legend { display: flex; gap: 10px; align-items: center; font-size: 0.72rem; color: #888; flex-wrap: wrap; }
+.leg { display: flex; align-items: center; gap: 4px; }
+.leg-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+/* Calendar grid */
+.cal-grid { padding: 12px; }
+.dow-row {
+  display: grid; grid-template-columns: repeat(7,1fr);
+  margin-bottom: 4px;
+}
+.dow-cell {
+  text-align: center; font-size: 0.72rem; font-weight: 700;
+  padding: 4px; color: #aaa;
+}
+.dow-cell:first-child { color: #fa5252; }
+.dow-cell:last-child  { color: #339af0; }
+
+.weeks { display: flex; flex-direction: column; gap: 4px; }
+.week-row { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; }
+
+.day-cell {
+  border-radius: 10px; padding: 6px 4px 8px;
+  min-height: 90px; border: 1.5px solid #f0f0f0;
+  background: white; vertical-align: top; position: relative;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.day-cell.empty { background: #fafafa; border-color: #f5f5f5; }
+.day-cell.today { border-color: #f76707; background: #fff9f5; }
+.day-cell.sunday .dn { color: #fa5252; }
+.day-cell.saturday .dn { color: #339af0; }
+
+.dn {
+  font-size: 0.82rem; font-weight: 700; color: #555;
+  display: block; text-align: right; padding-right: 4px;
+  line-height: 1;
+}
+.today .dn {
+  background: #f76707; color: white; border-radius: 50%;
+  width: 22px; height: 22px; display: flex; align-items: center; justify-content: center;
+  margin-left: auto; font-size: 0.75rem;
+}
+
+/* Attendance chips on calendar */
+.att-chips { display: flex; flex-direction: column; gap: 2px; margin-top: 2px; }
+.chip {
+  display: flex; align-items: center; gap: 3px;
+  border-radius: 6px; padding: 2px 5px; font-size: 0.66rem; font-weight: 600;
+  cursor: pointer; transition: opacity 0.1s; border: 1px solid transparent;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.chip:hover { opacity: 0.8; }
+.chip.present  { color: white; }
+.chip.absent   { color: white; opacity: 0.85; }
+.chip.unmarked { background: #f1f3f5; color: #888; border-color: #e0e0e0; }
+.chip.no-class { display: none; } /* hide non-class days */
+.chip-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; background: rgba(255,255,255,0.7); }
+.chip.unmarked .chip-dot { background: #ccc; }
+
+/* ── Student row below calendar ── */
+.student-att-row {
+  display: none; padding: 10px 14px; border-top: 1px solid #eef0ff;
+  gap: 6px; flex-wrap: wrap; align-items: center;
+  font-size: 0.82rem;
+}
+.student-att-row.show { display: flex; }
+
+/* ── Modal ── */
+.modal-bg {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.4); z-index: 200;
+  align-items: center; justify-content: center;
+}
+.modal-bg.open { display: flex; }
+.modal {
+  background: white; border-radius: 16px; padding: 22px;
+  width: 320px; max-width: 95vw;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+}
+.modal h3 { margin-bottom: 14px; font-size: 1rem; color: #3b5bdb; }
+.modal label { font-size: 0.82rem; color: #666; display: block; margin-bottom: 5px; }
+.modal input {
+  width: 100%; border: 1.5px solid #d0d8ff; border-radius: 8px;
+  padding: 7px 11px; font-size: 0.9rem; margin-bottom: 12px; color: #222;
+}
+.modal input:focus { outline: none; border-color: #5c7cfa; }
+.modal-footer { display: flex; gap: 8px; margin-top: 14px; }
+
+@media print {
+  header .header-right, .add-bar, .s-actions, .modal-bg { display: none !important; }
+  body { background: white; }
+  .main-layout { grid-template-columns: 1fr; }
+  .student-panel { position: static; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📐 수학학원 출석부</h1>
+  <div class="header-right">
+    <select id="yearSel" onchange="changeMonth()"></select>
+    <select id="monthSel" onchange="changeMonth()"></select>
+    <button class="btn btn-white" onclick="exportCSV()">📥 엑셀 저장</button>
+    <button class="btn btn-outline" onclick="window.print()">🖨️ 인쇄</button>
+  </div>
+</header>
+
+<div class="container">
+  <div class="summary">
+    <div class="card"><div class="lbl">전체 학생</div><div class="val" id="sumCount">0</div></div>
+    <div class="card"><div class="lbl">이번 달 평균 출석</div><div class="val" id="sumAvg">-</div></div>
+    <div class="card"><div class="lbl">오늘</div><div class="val" id="sumToday">-</div></div>
+  </div>
+
+  <div class="add-bar">
+    <input type="text" id="newName" placeholder="학생 이름" onkeydown="if(event.key==='Enter')addStudent()">
+    <div class="day-picker" id="newPicker"></div>
+    <button class="btn btn-green" onclick="addStudent()">+ 학생 추가</button>
+  </div>
+
+  <div class="main-layout">
+    <!-- Left: Student list -->
+    <div class="student-panel">
+      <div class="panel-title">👥 학생 목록</div>
+      <div class="student-list" id="studentList"></div>
+    </div>
+
+    <!-- Right: Calendar -->
+    <div class="cal-panel">
+      <div class="cal-header">
+        <span class="cal-title" id="calTitle"></span>
+        <div class="cal-legend">
+          <span class="leg"><span class="leg-dot" style="background:#51cf66"></span>출석</span>
+          <span class="leg"><span class="leg-dot" style="background:#ff6b6b"></span>결석</span>
+          <span class="leg"><span class="leg-dot" style="background:#dee2e6"></span>미체크(수업일)</span>
+          <span style="color:#f76707;font-weight:700">★ 오늘</span>
+        </div>
+      </div>
+      <div class="cal-grid">
+        <div class="dow-row">
+          <div class="dow-cell">일</div><div class="dow-cell">월</div>
+          <div class="dow-cell">화</div><div class="dow-cell">수</div>
+          <div class="dow-cell">목</div><div class="dow-cell">금</div>
+          <div class="dow-cell">토</div>
+        </div>
+        <div class="weeks" id="calWeeks"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit modal -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <h3>✏️ 학생 정보 수정</h3>
+    <label>이름</label>
+    <input type="text" id="editName">
+    <label>수업 요일</label>
+    <div class="day-picker" id="editPicker" style="margin-top:4px;margin-bottom:4px"></div>
+    <div class="modal-footer">
+      <button class="btn btn-blue" style="flex:1" onclick="saveEdit()">저장</button>
+      <button class="btn" style="background:#f1f3f5;color:#555;flex:1" onclick="closeModal()">취소</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Palette (10 colors) ──
+const PALETTE = [
+  '#f03e3e','#e67700','#2f9e44','#1971c2','#7048e8',
+  '#c2255c','#0c8599','#5c940d','#862e9c','#d6336c'
+];
+const DAY_LABELS = ['일','월','화','수','목','금','토'];
+const DAY_CLS    = ['sun','','','','','','sat'];
+const _now = new Date();
+const todayKey = fmtKey(_now);
+
+let year  = _now.getFullYear();
+let month = _now.getMonth() + 1;
+let dates = [];
+let students   = [];  // [{id,name,days,color}]
+let attendance = {};  // {sid: {dateKey: 'present'|'absent'|null}}
+let editingId  = null;
+let newDays    = Array(7).fill(false);
+let editDays   = Array(7).fill(false);
+
+function fmtKey(d){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+function pad(n){ return String(n).padStart(2,'0'); }
+
+// ── Init ──
+function init(){
+  const ysel=document.getElementById('yearSel');
+  for(let y=2023;y<=2030;y++){
+    const o=document.createElement('option');
+    o.value=y; o.text=y+'년'; if(y===year)o.selected=true; ysel.appendChild(o);
+  }
+  const msel=document.getElementById('monthSel');
+  for(let m=1;m<=12;m++){
+    const o=document.createElement('option');
+    o.value=m; o.text=m+'월'; if(m===month)o.selected=true; msel.appendChild(o);
+  }
+  document.getElementById('sumToday').textContent=`${_now.getMonth()+1}/${_now.getDate()}`;
+  buildPicker('newPicker', newDays);
+  buildPicker('editPicker', editDays);
+  loadStudents(); changeMonth();
+}
+
+function changeMonth(){
+  year  = parseInt(document.getElementById('yearSel').value);
+  month = parseInt(document.getElementById('monthSel').value);
+  document.getElementById('calTitle').textContent=`${year}년 ${month}월`;
+  buildDates(); loadAtt(); render();
+}
+
+function buildDates(){
+  dates=[];
+  const dim=new Date(year,month,0).getDate();
+  for(let d=1;d<=dim;d++){
+    const dt=new Date(year,month-1,d);
+    dates.push({d, dow:dt.getDay(), key:`${year}-${pad(month)}-${pad(d)}`});
+  }
+}
+
+// ── Day picker ──
+function buildPicker(id, arr){
+  const el=document.getElementById(id); el.innerHTML='';
+  DAY_LABELS.forEach((lbl,i)=>{
+    const b=document.createElement('button');
+    b.type='button';
+    b.className='dp-btn'+(i===0?' sun':i===6?' sat':'')+(arr[i]?' on':'');
+    b.textContent=lbl;
+    b.onclick=()=>{ arr[i]=!arr[i]; b.classList.toggle('on',arr[i]); };
+    el.appendChild(b);
+  });
+}
+
+// ── Storage ──
+function loadStudents(){
+  try{ students=JSON.parse(localStorage.getItem('ms2_students'))||[]; }catch{ students=[]; }
+  // assign colors if missing
+  students.forEach((s,i)=>{ if(!s.color) s.color=PALETTE[i%PALETTE.length]; });
+}
+function saveStudents(){ localStorage.setItem('ms2_students',JSON.stringify(students)); }
+function loadAtt(){
+  try{ attendance=JSON.parse(localStorage.getItem(`ms2_att_${year}_${month}`))||{}; }catch{ attendance={}; }
+}
+function saveAtt(){ localStorage.setItem(`ms2_att_${year}_${month}`,JSON.stringify(attendance)); }
+
+// ── Student CRUD ──
+function addStudent(){
+  const name=document.getElementById('newName').value.trim();
+  if(!name){ alert('이름을 입력해 주세요.'); return; }
+  if(students.find(s=>s.name===name)){ alert('이미 있는 학생입니다.'); return; }
+  if(!newDays.some(Boolean)){ alert('수업 요일을 하나 이상 선택해 주세요.'); return; }
+  const color=PALETTE[students.length%PALETTE.length];
+  students.push({id:Date.now().toString(), name, days:[...newDays], color});
+  saveStudents();
+  document.getElementById('newName').value='';
+  newDays.fill(false); buildPicker('newPicker',newDays);
+  render();
+}
+
+function openEdit(id){
+  const s=students.find(x=>x.id===id); if(!s)return;
+  editingId=id;
+  document.getElementById('editName').value=s.name;
+  editDays=[...s.days]; buildPicker('editPicker',editDays);
+  document.getElementById('modalBg').classList.add('open');
+}
+function closeModal(){ document.getElementById('modalBg').classList.remove('open'); }
+function saveEdit(){
+  const name=document.getElementById('editName').value.trim();
+  if(!name){ alert('이름을 입력해 주세요.'); return; }
+  if(!editDays.some(Boolean)){ alert('수업 요일을 선택해 주세요.'); return; }
+  const s=students.find(x=>x.id===editingId); if(!s)return;
+  s.name=name; s.days=[...editDays];
+  saveStudents(); closeModal(); render();
+}
+function deleteStudent(id){
+  if(!confirm('학생을 삭제할까요?'))return;
+  students=students.filter(s=>s.id!==id);
+  saveStudents(); render();
+}
+
+// ── Toggle attendance ──
+function toggle(sid, key){
+  if(!attendance[sid]) attendance[sid]={};
+  const cur=attendance[sid][key];
+  attendance[sid][key]=!cur?'present':cur==='present'?'absent':null;
+  saveAtt(); renderCalendar(); renderStudentList();
+}
+
+// ── Render all ──
+function render(){ renderStudentList(); renderCalendar(); renderSummary(); }
+
+function renderStudentList(){
+  const el=document.getElementById('studentList'); el.innerHTML='';
+  if(!students.length){
+    el.innerHTML='<div style="padding:20px;text-align:center;color:#ccc;font-size:0.85rem">학생을 추가해 주세요</div>';
+    return;
+  }
+  students.forEach(s=>{
+    const att=attendance[s.id]||{};
+    const classDates=dates.filter(d=>s.days[d.dow]);
+    const present=classDates.filter(d=>att[d.key]==='present').length;
+
+    const div=document.createElement('div');
+    div.className='s-item';
+    const tagHtml=DAY_LABELS.map((l,i)=>s.days[i]
+      ?`<span class="s-tag ${DAY_CLS[i]}">${l}</span>`:'').join('');
+    div.innerHTML=`
+      <span class="s-dot" style="background:${s.color}"></span>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <span class="s-name">${s.name}</span>
+          <div class="s-tags">${tagHtml}</div>
+        </div>
+      </div>
+      <span class="s-count">${present}/${classDates.length}회</span>
+      <div class="s-actions">
+        <button class="btn btn-blue btn-sm" onclick="event.stopPropagation();markToday('${s.id}')">오늘</button>
+        <button class="btn btn-sm" style="background:#f1f3f5;color:#555" onclick="event.stopPropagation();openEdit('${s.id}')">✏️</button>
+        <button class="btn btn-red btn-sm" onclick="event.stopPropagation();deleteStudent('${s.id}')">🗑</button>
+      </div>`;
+    el.appendChild(div);
+  });
+}
+
+function renderCalendar(){
+  const weeksEl=document.getElementById('calWeeks'); weeksEl.innerHTML='';
+
+  // Build 6-week grid
+  const firstDow=new Date(year,month-1,1).getDay();
+  const dim=new Date(year,month,0).getDate();
+  let dayCursor=1;
+
+  for(let w=0;w<6;w++){
+    const weekRow=document.createElement('div'); weekRow.className='week-row';
+    let hasDay=false;
+
+    for(let d=0;d<7;d++){
+      const cellIdx=w*7+d;
+      const cell=document.createElement('div');
+
+      if(cellIdx<firstDow||dayCursor>dim){
+        cell.className='day-cell empty';
+        weekRow.appendChild(cell);
+        continue;
+      }
+
+      hasDay=true;
+      const dayNum=dayCursor;
+      const key=`${year}-${pad(month)}-${pad(dayNum)}`;
+      const isToday=key===todayKey;
+      const dow=d;
+
+      cell.className='day-cell'+(dow===0?' sunday':dow===6?' saturday':'')+(isToday?' today':'');
+
+      // Date number
+      const dnEl=document.createElement('div'); dnEl.className='dn';
+      dnEl.textContent=dayNum;
+      cell.appendChild(dnEl);
+
+      // Chips
+      const chipsEl=document.createElement('div'); chipsEl.className='att-chips';
+
+      students.forEach(s=>{
+        const isClassDay=s.days[dow];
+        const state=(attendance[s.id]||{})[key]||null;
+
+        const chip=document.createElement('div');
+        if(!isClassDay){
+          chip.className='chip no-class'; // hidden
+        } else {
+          const cls=state==='present'?'present':state==='absent'?'absent':'unmarked';
+          chip.className=`chip ${cls}`;
+          if(cls==='present')      chip.style.background=s.color;
+          else if(cls==='absent')  chip.style.background='#adb5bd';
+          chip.innerHTML=`<span class="chip-dot"></span><span style="overflow:hidden;text-overflow:ellipsis">${s.name}</span>`;
+          chip.title=`${s.name} — ${cls==='present'?'출석':cls==='absent'?'결석':'미체크'} (클릭하여 변경)`;
+          chip.onclick=()=>toggle(s.id, key);
+        }
+        chipsEl.appendChild(chip);
+      });
+
+      cell.appendChild(chipsEl);
+      dayCursor++;
+      weekRow.appendChild(cell);
+    }
+
+    if(hasDay) weeksEl.appendChild(weekRow);
+  }
+}
+
+function renderSummary(){
+  document.getElementById('sumCount').textContent=students.length;
+  if(!students.length){ document.getElementById('sumAvg').textContent='-'; return; }
+  let total=0;
+  students.forEach(s=>{
+    const att=attendance[s.id]||{};
+    dates.forEach(d=>{ if(s.days[d.dow]&&att[d.key]==='present') total++; });
+  });
+  document.getElementById('sumAvg').textContent=(total/students.length).toFixed(1)+'회';
+}
+
+function markToday(sid){
+  const s=students.find(x=>x.id===sid); if(!s)return;
+  const td=dates.find(d=>d.key===todayKey);
+  if(!td){ alert('선택된 월에 오늘 날짜가 없습니다.'); return; }
+  if(!s.days[td.dow]){ alert(`${s.name} 학생의 오늘 수업일이 아닙니다.`); return; }
+  if(!attendance[sid]) attendance[sid]={};
+  attendance[sid][todayKey]='present';
+  saveAtt(); render();
+}
+
+// ── CSV export ──
+function exportCSV(){
+  const rows=[['이름','수업요일','날짜','요일','출석여부']];
+  students.forEach(s=>{
+    const att=attendance[s.id]||{};
+    const dStr=DAY_LABELS.filter((_,i)=>s.days[i]).join('/');
+    dates.filter(d=>s.days[d.dow]).forEach(({d,dow,key})=>{
+      const v=att[key];
+      rows.push([s.name,dStr,`${month}/${d}`,DAY_LABELS[dow]+'요일',
+        v==='present'?'출석':v==='absent'?'결석':'미체크']);
+    });
+  });
+  const blob=new Blob(['\uFEFF'+rows.map(r=>r.join(',')).join('\n')],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`출석부_${year}년_${month}월.csv`; a.click();
+}
+
+document.getElementById('modalBg').addEventListener('click',e=>{
+  if(e.target===e.currentTarget) closeModal();
+});
+
+init();
+</script>
+</body>
+</html>
